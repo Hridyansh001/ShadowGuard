@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShadowGuard — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b0f;
+    --bg2: #0e1318;
+    --bg3: #141a22;
+    --border: #1e2832;
+    --border2: #263040;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --blocked: #ef4444;
+    --blocked-bg: #1a0a0a;
+    --blocked-border: #7f1d1d;
+    --warning: #f59e0b;
+    --warning-bg: #1a1200;
+    --warning-border: #78350f;
+    --safe: #22c55e;
+    --safe-bg: #071a0f;
+    --safe-border: #14532d;
+    --error: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.35;
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .login-logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .login-logo span { color: var(--accent); }
+
+  .login-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field input:focus { border-color: var(--accent); }
+
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .login-btn:hover { background: var(--accent2); }
+  .login-btn:active { transform: scale(0.98); }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .login-error {
+    background: var(--blocked-bg);
+    border: 1px solid var(--blocked-border);
+    color: var(--blocked);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .login-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,11,15,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .admin-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    background: var(--safe);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+  }
+
+  .btn {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.danger:hover { border-color: var(--blocked); color: var(--blocked); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+  .btn.primary:hover { background: var(--accent2); }
+
+  /* ── STATS ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 24px 0;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border2); }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-card.blocked .stat-value { color: var(--blocked); }
+  .stat-card.warning .stat-value { color: var(--warning); }
+  .stat-card.safe    .stat-value { color: var(--safe); }
+  .stat-card.total   .stat-value { color: var(--text); }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .filter-btn.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+  .filter-btn:hover:not(.active) { color: var(--text); }
+
+  .search-box {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 200px;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  /* ── ALERTS ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .alert-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .alerts-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .alert-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    transition: all 0.15s;
+    animation: fadeIn 0.3s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .alert-card:hover { border-color: var(--border2); background: var(--bg3); }
+  .alert-card.BLOCKED { border-left: 3px solid var(--blocked); }
+  .alert-card.WARNING { border-left: 3px solid var(--warning); }
+  .alert-card.SAFE    { border-left: 3px solid var(--safe); }
+
+  .alert-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .verdict-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .verdict-badge.BLOCKED { background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked-border); }
+  .verdict-badge.WARNING { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+  .verdict-badge.SAFE    { background: var(--safe-bg);    color: var(--safe);    border: 1px solid var(--safe-border); }
+
+  .risk-bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .risk-bar-bg {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .risk-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .alert-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .alert-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .reason-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* ── STATES ── */
+  .state-box {
+    background: var(--bg2);
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    padding: 60px 24px;
+    text-align: center;
+  }
+
+  .state-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+  .state-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .state-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .controls { flex-direction: column; align-items: stretch; }
+    .filter-group { justify-content: center; }
+    .login-card { margin: 16px; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">🛡</div>
+      Shadow<span>Guard</span>
+    </div>
+    <div class="login-sub">Admin access only</div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@example.com" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" />
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none">
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🛡</div>
+        Shadow<span>Guard</span>
+      </div>
+      <div class="header-right">
+        <div class="live-dot"></div>
+        <span id="last-refreshed">–</span>
+        <span class="admin-badge" id="admin-email-badge">admin</span>
+        <button class="btn" onclick="loadAlerts()">↻ Refresh</button>
+        <button class="btn danger" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <div class="stats">
+      <div class="stat-card total">
+        <div class="stat-label">Total scans</div>
+        <div class="stat-value" id="stat-total">–</div>
+      </div>
+      <div class="stat-card blocked">
+        <div class="stat-label">Blocked</div>
+        <div class="stat-value" id="stat-blocked">–</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">Warning</div>
+        <div class="stat-value" id="stat-warning">–</div>
+      </div>
+      <div class="stat-card safe">
+        <div class="stat-label">Safe</div>
+        <div class="stat-value" id="stat-safe">–</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="setFilter('ALL', this)">All</button>
+        <button class="filter-btn" onclick="setFilter('BLOCKED', this)">Blocked</button>
+        <button class="filter-btn" onclick="setFilter('WARNING', this)">Warning</button>
+        <button class="filter-btn" onclick="setFilter('SAFE', this)">Safe</button>
+      </div>
+      <input class="search-box" id="search" placeholder="Search masked text or reasons..." oninput="renderAlerts()" />
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Alert log</span>
+      <span class="alert-count" id="showing-count">– alerts</span>
+    </div>
+
+    <div class="alerts-list" id="alerts-container">
+      <div class="state-box">
+        <div class="spinner"></div>
+        <div class="state-title">Loading alerts...</div>
+      </div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+
+  </div>
+</div>
+
+<script>
+  const BASE = 'http://localhost:8080';
+  let jwtToken = null;
+  let adminEmail = null;
+  let allAlerts = [];
+  let currentFilter = 'ALL';
+  let currentPage = 1;
+  const PAGE_SIZE = 15;
+
+  // ── LOGIN ──
+  document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const errBox = document.getElementById('login-error');
+
+    if (!email || !password) {
+      showLoginError('Please enter email and password.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="login-spinner"></span>Signing in...';
+    errBox.style.display = 'none';
+
+    try {
+      const res = await fetch(`${BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Invalid credentials');
+      }
+
+      const data = await res.json();
+      jwtToken = data.token;
+      adminEmail = email;
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('admin-email-badge').textContent = email;
+
+      loadAlerts();
+      setInterval(loadAlerts, 30000);
+
+    } catch (err) {
+      showLoginError(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  }
+
+  function showLoginError(msg) {
+    const errBox = document.getElementById('login-error');
+    errBox.textContent = msg;
+    errBox.style.display = 'block';
+  }
+
+  function doLogout() {
+    jwtToken = null;
+    adminEmail = null;
+    allAlerts = [];
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('login-btn').textContent = 'Sign in';
+    document.getElementById('login-btn').disabled = false;
+  }
+
+  // ── ALERTS ──
+  async function loadAlerts() {
+    try {
+      const res = await fetch(`${BASE}/api/alerts`, {
+        headers: { 'Authorization': 'Bearer ' + jwtToken }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        doLogout();
+        showLoginError('Session expired. Please log in again.');
+        return;
+      }
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      const data = await res.json();
+      allAlerts = Array.isArray(data) ? data.reverse() : [];
+      updateStats();
+      currentPage = 1;
+      renderAlerts();
+      document.getElementById('last-refreshed').textContent =
+        'Synced ' + new Date().toLocaleTimeString();
+
+    } catch (err) {
+      console.error('Failed to load alerts:', err);
+    }
+  }
+
+  function updateStats() {
+    document.getElementById('stat-total').textContent   = allAlerts.length;
+    document.getElementById('stat-blocked').textContent = allAlerts.filter(a => a.verdict === 'BLOCKED').length;
+    document.getElementById('stat-warning').textContent = allAlerts.filter(a => a.verdict === 'WARNING').length;
+    document.getElementById('stat-safe').textContent    = allAlerts.filter(a => a.verdict === 'SAFE').length;
+  }
+
+  function setFilter(f, el) {
+    currentFilter = f;
+    currentPage = 1;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderAlerts();
+  }
+
+  function getFiltered() {
+    const q = document.getElementById('search').value.toLowerCase();
+    return allAlerts.filter(a => {
+      const matchVerdict = currentFilter === 'ALL' || a.verdict === currentFilter;
+      const matchSearch  = !q ||
+        (a.text  || '').toLowerCase().includes(q) ||
+        (a.mask  || '').toLowerCase().includes(q) ||
+        (a.topReasons || []).some(r => r.toLowerCase().includes(q));
+      return matchVerdict && matchSearch;
+    });
+  }
+
+  function renderAlerts() {
+    const filtered = getFiltered();
+    const total = filtered.length;
+    const page  = filtered.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+    document.getElementById('showing-count').textContent = total + ' alert' + (total !== 1 ? 's' : '');
+    const container = document.getElementById('alerts-container');
+
+    if (total === 0) {
+      container.innerHTML = `<div class="state-box">
+        <div class="state-icon">🔍</div>
+        <div class="state-title">No alerts found</div>
+        <div class="state-sub">Nothing matches the current filter or search.</div>
+      </div>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = page.map((a, i) => {
+      const displayText = a.mask || a.text || '(no text)';
+      const reasons = a.topReasons || [];
+      const score   = a.riskScore  || 0;
+      const verdict = a.verdict    || 'SAFE';
+      const color   = verdict === 'BLOCKED' ? 'var(--blocked)' :
+                      verdict === 'WARNING'  ? 'var(--warning)'  : 'var(--safe)';
+      return `<div class="alert-card ${verdict}" style="animation-delay:${i*0.04}s">
+        <div class="alert-top">
+          <span class="verdict-badge ${verdict}">${verdict}</span>
+          <div class="risk-bar-wrap">
+            <div class="risk-bar-bg">
+              <div class="risk-bar-fill" style="width:${score}%;background:${color}"></div>
+            </div>
+            <span class="risk-score">${score}/100</span>
+          </div>
+          <span class="alert-time">${timeAgo(a.timestamp)}</span>
+        </div>
+        <div class="alert-text">${esc(displayText)}</div>
+        <div class="reasons">${reasons.map(r => `<span class="reason-tag">${esc(r)}</span>`).join('')}</div>
+      </div>`;
+    }).join('');
+
+    renderPagination(total);
+  }
+
+  function renderPagination(total) {
+    const pages = Math.ceil(total / PAGE_SIZE);
+    const pag = document.getElementById('pagination');
+    if (pages <= 1) { pag.innerHTML = ''; return; }
+    pag.innerHTML = Array.from({length: pages}, (_,i) => i+1)
+      .map(p => `<button class="btn${p===currentPage?' primary':''}" onclick="goPage(${p})">${p}</button>`)
+      .join('');
+  }
+
+  function goPage(p) {
+    currentPage = p;
+    renderAlerts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function timeAgo(ts) {
+    if (!ts) return '–';
+    const diff = (Date.now() - new Date(ts).getTime()) / 1000;
+    if (diff < 60)   return Math.floor(diff) + 's ago';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
+    return new Date(ts).toLocaleDateString();
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShadowGuard — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b0f;
+    --bg2: #0e1318;
+    --bg3: #141a22;
+    --border: #1e2832;
+    --border2: #263040;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --blocked: #ef4444;
+    --blocked-bg: #1a0a0a;
+    --blocked-border: #7f1d1d;
+    --warning: #f59e0b;
+    --warning-bg: #1a1200;
+    --warning-border: #78350f;
+    --safe: #22c55e;
+    --safe-bg: #071a0f;
+    --safe-border: #14532d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,11,15,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    background: var(--safe);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+  }
+
+  .btn {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+  .btn.primary:hover { background: var(--accent2); }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 24px 0;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border2); }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-card.blocked .stat-value { color: var(--blocked); }
+  .stat-card.warning .stat-value { color: var(--warning); }
+  .stat-card.safe .stat-value { color: var(--safe); }
+  .stat-card.total .stat-value { color: var(--text); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .filter-btn.active {
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .filter-btn:hover:not(.active) { color: var(--text); }
+
+  .search-box {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 200px;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  /* Backend config */
+  .config-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .config-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .config-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 7px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    min-width: 240px;
+  }
+  .config-input:focus { border-color: var(--accent); }
+
+  /* Alerts table */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .alert-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .alerts-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .alert-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    cursor: default;
+    transition: all 0.15s;
+    animation: fadeIn 0.3s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .alert-card:hover { border-color: var(--border2); background: var(--bg3); }
+  .alert-card.BLOCKED { border-left: 3px solid var(--blocked); }
+  .alert-card.WARNING { border-left: 3px solid var(--warning); }
+  .alert-card.SAFE { border-left: 3px solid var(--safe); }
+
+  .alert-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .verdict-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .verdict-badge.BLOCKED { background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked-border); }
+  .verdict-badge.WARNING { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+  .verdict-badge.SAFE { background: var(--safe-bg); color: var(--safe); border: 1px solid var(--safe-border); }
+
+  .risk-bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .risk-bar-bg {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .risk-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .alert-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .alert-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .reason-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* Empty / error states */
+  .state-box {
+    background: var(--bg2);
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    padding: 60px 24px;
+    text-align: center;
+  }
+
+  .state-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+
+  .state-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .state-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .controls { flex-direction: column; align-items: stretch; }
+    .filter-group { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🛡</div>
+      Shadow<span>Guard</span>
+    </div>
+    <div class="header-right">
+      <div class="live-dot"></div>
+      <span id="last-refreshed">–</span>
+      <button class="btn" onclick="loadAlerts()">↻ Refresh</button>
+      <button class="btn primary" onclick="clearFilter()">All alerts</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="config-bar">
+    <span class="config-label">Backend URL</span>
+    <input class="config-input" id="backend-url" value="http://localhost:8080/api/alerts" />
+    <input class="config-input" id="jwt-token" placeholder="JWT token (optional — if /api/alerts requires auth)" style="flex:1.5" />
+    <button class="btn primary" onclick="loadAlerts()">Connect</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card total">
+      <div class="stat-label">Total scans</div>
+      <div class="stat-value" id="stat-total">–</div>
+    </div>
+    <div class="stat-card blocked">
+      <div class="stat-label">Blocked</div>
+      <div class="stat-value" id="stat-blocked">–</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">Warning</div>
+      <div class="stat-value" id="stat-warning">–</div>
+    </div>
+    <div class="stat-card safe">
+      <div class="stat-label">Safe</div>
+      <div class="stat-value" id="stat-safe">–</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="filter-group">
+      <button class="filter-btn active" onclick="setFilter('ALL', this)">All</button>
+      <button class="filter-btn" onclick="setFilter('BLOCKED', this)">Blocked</button>
+      <button class="filter-btn" onclick="setFilter('WARNING', this)">Warning</button>
+      <button class="filter-btn" onclick="setFilter('SAFE', this)">Safe</button>
+    </div>
+    <input class="search-box" id="search" placeholder="Search masked text or reasons..." oninput="renderAlerts()" />
+  </div>
+
+  <div class="section-header">
+    <span class="section-title">Alert log</span>
+    <span class="alert-count" id="showing-count">– alerts</span>
+  </div>
+
+  <div class="alerts-list" id="alerts-container">
+    <div class="state-box">
+      <div class="state-icon">🔌</div>
+      <div class="state-title">Not connected</div>
+      <div class="state-sub">Enter your backend URL above and click Connect.<br>Make sure your Spring Boot server is running on port 8080.</div>
+    </div>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+
+</div>
+
+<script>
+  let allAlerts = [];
+  let currentFilter = 'ALL';
+  let currentPage = 1;
+  const PAGE_SIZE = 15;
+
+  function timeAgo(ts) {
+    if (!ts) return '–';
+    const d = new Date(ts);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return Math.floor(diff) + 's ago';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return d.toLocaleDateString();
+  }
+
+  function riskColor(score) {
+    if (score >= 50) return 'var(--blocked)';
+    if (score >= 20) return 'var(--warning)';
+    return 'var(--safe)';
+  }
+
+  function setFilter(f, el) {
+    currentFilter = f;
+    currentPage = 1;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderAlerts();
+  }
+
+  function clearFilter() {
+    setFilter('ALL', document.querySelector('.filter-btn'));
+  }
+
+  function getFiltered() {
+    const q = document.getElementById('search').value.toLowerCase();
+    return allAlerts.filter(a => {
+      const matchVerdict = currentFilter === 'ALL' || a.verdict === currentFilter;
+      const matchSearch = !q ||
+        (a.text || '').toLowerCase().includes(q) ||
+        (a.mask || '').toLowerCase().includes(q) ||
+        (a.topReasons || []).some(r => r.toLowerCase().includes(q));
+      return matchVerdict && matchSearch;
+    });
+  }
+
+  function renderAlerts() {
+    const filtered = getFiltered();
+    const total = filtered.length;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const page = filtered.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('showing-count').textContent = total + ' alert' + (total !== 1 ? 's' : '');
+
+    const container = document.getElementById('alerts-container');
+
+    if (total === 0) {
+      container.innerHTML = `<div class="state-box">
+        <div class="state-icon">🔍</div>
+        <div class="state-title">No alerts found</div>
+        <div class="state-sub">No alerts match your current filter or search.</div>
+      </div>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = page.map((a, i) => {
+      const displayText = a.mask || a.text || '(no text)';
+      const reasons = a.topReasons || [];
+      const score = a.riskScore || 0;
+      const verdict = a.verdict || 'SAFE';
+      return `<div class="alert-card ${verdict}" style="animation-delay:${i*0.04}s">
+        <div class="alert-top">
+          <span class="verdict-badge ${verdict}">${verdict}</span>
+          <div class="risk-bar-wrap">
+            <div class="risk-bar-bg">
+              <div class="risk-bar-fill" style="width:${score}%;background:${riskColor(score)}"></div>
+            </div>
+            <span class="risk-score">${score}/100</span>
+          </div>
+          <span class="alert-time">${timeAgo(a.timestamp)}</span>
+        </div>
+        <div class="alert-text">${escHtml(displayText)}</div>
+        <div class="reasons">${reasons.map(r => `<span class="reason-tag">${escHtml(r)}</span>`).join('')}</div>
+      </div>`;
+    }).join('');
+
+    renderPagination(total);
+  }
+
+  function renderPagination(total) {
+    const pages = Math.ceil(total / PAGE_SIZE);
+    const pag = document.getElementById('pagination');
+    if (pages <= 1) { pag.innerHTML = ''; return; }
+    let html = '';
+    for (let i = 1; i <= pages; i++) {
+      html += `<button class="btn${i === currentPage ? ' primary' : ''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    pag.innerHTML = html;
+  }
+
+  function goPage(p) {
+    currentPage = p;
+    renderAlerts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function updateStats() {
+    const total = allAlerts.length;
+    const blocked = allAlerts.filter(a => a.verdict === 'BLOCKED').length;
+    const warning = allAlerts.filter(a => a.verdict === 'WARNING').length;
+    const safe = allAlerts.filter(a => a.verdict === 'SAFE').length;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-blocked').textContent = blocked;
+    document.getElementById('stat-warning').textContent = warning;
+    document.getElementById('stat-safe').textContent = safe;
+  }
+
+  async function loadAlerts() {
+    const url = document.getElementById('backend-url').value.trim();
+    const token = document.getElementById('jwt-token').value.trim();
+
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = `<div class="state-box"><div class="spinner"></div><div class="state-title">Connecting...</div><div class="state-sub">${escHtml(url)}</div></div>`;
+
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
+
+      const data = await res.json();
+      allAlerts = Array.isArray(data) ? data.reverse() : [];
+      updateStats();
+      currentPage = 1;
+      renderAlerts();
+
+      const now = new Date().toLocaleTimeString();
+      document.getElementById('last-refreshed').textContent = 'Last sync ' + now;
+
+    } catch (err) {
+      container.innerHTML = `<div class="state-box">
+        <div class="state-icon">⚠️</div>
+        <div class="state-title">Connection failed</div>
+        <div class="state-sub">${escHtml(err.message)}<br><br>
+          Check that Spring Boot is running and CORS is fixed.<br>
+          If /api/alerts requires auth, paste your JWT token above.
+        </div>
+      </div>`;
+    }
+  }
+
+  loadAlerts();
+  setInterval(loadAlerts, 30000);
+</script>
+</body>
+</html> -->

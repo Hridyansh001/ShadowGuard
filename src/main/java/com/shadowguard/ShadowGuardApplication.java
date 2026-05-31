@@ -11,3 +11,7 @@ public class ShadowGuardApplication {
     }
 
 }
+
+
+// 31-may:-  made changes in postgre changed text from charecter varying(255) to text to fix the problem related to big
+// paragraphs breaking the code during testing. 

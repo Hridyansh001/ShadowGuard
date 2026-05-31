@@ -12,6 +12,7 @@ public class Alert {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(columnDefinition = "TEXT")   // added to fix breakdown at large paragraph testing
     private String text;
     private int riskScore;
     private String verdict;
@@ -19,6 +20,9 @@ public class Alert {
 
     @ElementCollection
     private List<String> topReasons;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     public Alert() {}
 
@@ -37,4 +41,11 @@ public class Alert {
     public String getVerdict() { return verdict; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public List<String> getTopReasons() { return topReasons; }
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
 }
