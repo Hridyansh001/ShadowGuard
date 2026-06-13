@@ -15,7 +15,8 @@
     "https://gemini.google.com/*",
   "https://chatgpt.com/*",
   "http://localhost:8080/*",
-  "https://claude.ai/*"
+  "https://claude.ai/*",
+  "https://github.com/*"       
 ],
 
   "content_scripts": [
@@ -23,7 +24,8 @@
       "matches": [
         "https://chatgpt.com/*",
         "https://gemini.google.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://github.com/*"
       ],
 
       "js": [
